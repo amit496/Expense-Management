@@ -10,6 +10,7 @@ import 'accounts_screen.dart';
 import 'categories_screen.dart';
 import 'scheduled_email_backup_screen.dart';
 import 'security_settings_screen.dart';
+import 'tutorial_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -411,6 +412,40 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
               onTap: () => _showClearDialog(context, provider),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          _buildSectionTitle('Help'),
+          const SizedBox(height: 10),
+          _buildSettingCard(
+            isDark: isDark,
+            child: ListTile(
+              leading: const Icon(
+                Icons.school_rounded,
+                color: AppTheme.primary,
+              ),
+              title: const Text('How to use — Tutorial'),
+              subtitle: Text(
+                'Step-by-step guide for all app features',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white38 : Colors.grey,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: isDark ? Colors.white24 : Colors.grey.shade400,
+              ),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TutorialScreen()),
+              ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
