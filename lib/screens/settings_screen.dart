@@ -11,6 +11,10 @@ import 'categories_screen.dart';
 import 'scheduled_email_backup_screen.dart';
 import 'security_settings_screen.dart';
 import 'tutorial_screen.dart';
+import 'legal_hub_screen.dart';
+import 'legal_document_screen.dart';
+import '../constants/legal_config.dart';
+import '../content/legal_content.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -455,6 +459,39 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
+          _buildSectionTitle('Legal & Policies'),
+          const SizedBox(height: 10),
+          _buildSettingCard(
+            isDark: isDark,
+            child: ListTile(
+              leading: const Icon(
+                Icons.policy_rounded,
+                color: AppTheme.primary,
+              ),
+              title: const Text('Privacy, Terms & More'),
+              subtitle: Text(
+                'Privacy Policy, Terms, About Us, Data Safety guide',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? Colors.white38 : Colors.grey,
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right_rounded,
+                color: isDark ? Colors.white24 : Colors.grey.shade400,
+              ),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LegalHubScreen()),
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            ),
+          ),
+
+          const SizedBox(height: 24),
           _buildSectionTitle('About'),
           const SizedBox(height: 10),
           _buildSettingCard(
@@ -476,16 +513,16 @@ class SettingsScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'ExpenseTracker',
-                    style: TextStyle(
+                  Text(
+                    LegalConfig.appName,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Version 1.0.0',
+                    'Version ${LegalConfig.appVersion}',
                     style: TextStyle(
                       fontSize: 12,
                       color: isDark ? Colors.white38 : Colors.grey,
@@ -498,6 +535,56 @@ class SettingsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.white54 : Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 4,
+                    children: [
+                      _LegalQuickLink(
+                        label: 'Privacy',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LegalDocumentScreen(
+                              documentType: LegalDocumentType.privacyPolicy,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Text('·', style: TextStyle(color: isDark ? Colors.white24 : Colors.grey)),
+                      _LegalQuickLink(
+                        label: 'Terms',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LegalDocumentScreen(
+                              documentType: LegalDocumentType.termsOfService,
+                            ),
+                          ),
+                        ),
+                      ),
+                      Text('·', style: TextStyle(color: isDark ? Colors.white24 : Colors.grey)),
+                      _LegalQuickLink(
+                        label: 'Contact',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LegalDocumentScreen(
+                              documentType: LegalDocumentType.contact,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '© ${DateTime.now().year} ${LegalConfig.developerName}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark ? Colors.white38 : Colors.grey,
                     ),
                   ),
                 ],
@@ -631,6 +718,33 @@ class SettingsScreen extends StatelessWidget {
                 style: TextStyle(color: AppTheme.expense)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _LegalQuickLink extends StatelessWidget {
+  const _LegalQuickLink({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton(
+      onPressed: onTap,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 13,
+          color: AppTheme.primary,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

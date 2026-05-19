@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../services/legal_consent_service.dart';
 import 'home_screen.dart';
+import 'legal_acceptance_screen.dart';
 import 'lock_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -40,8 +42,13 @@ class _SplashScreenState extends State<SplashScreen>
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         final auth = Provider.of<AuthProvider>(context, listen: false);
-        final destination =
-            auth.isLocked ? const LockScreen() : const HomeScreen();
+        final Widget destination;
+        if (!LegalConsentService.isAccepted()) {
+          destination = const LegalAcceptanceScreen();
+        } else {
+          destination =
+              auth.isLocked ? const LockScreen() : const HomeScreen();
+        }
 
         Navigator.pushReplacement(
           context,
