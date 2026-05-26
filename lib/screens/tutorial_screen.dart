@@ -77,9 +77,9 @@ class TutorialScreen extends StatelessWidget {
         _TutorialStep(
           icon: Icons.account_balance_wallet_outlined,
           color: AppTheme.secondary,
-          title: 'Accounts & wallets',
+          title: 'Bank / Wallet Accounts',
           description:
-              'Manage Cash, Bank, UPI, and custom wallets in Settings → Accounts.',
+              'Manage Cash Wallet, UPI Wallet, SBI Bank, HDFC Bank, and custom accounts in Settings → Accounts.',
           tips: [
             'Assign an account when adding each transaction.',
           ],

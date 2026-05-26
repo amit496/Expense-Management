@@ -15,14 +15,14 @@ class AccountsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Accounts & wallets'),
+        title: const Text('Bank / Wallet Accounts'),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
         children: [
           Text(
-            'Use separate accounts for cash, bank, or cards. '
-            'They appear when you add a transaction.',
+            'Use separate bank accounts or wallets for each source of money. '
+            'Examples: Cash Wallet, UPI Wallet, SBI Bank, HDFC Bank.',
             style: TextStyle(
               fontSize: 13,
               height: 1.35,
@@ -75,7 +75,10 @@ class AccountsScreen extends StatelessWidget {
         onPressed: () => _showAddDialog(context, provider),
         backgroundColor: AppTheme.primary,
         icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: const Text('Add account', style: TextStyle(color: Colors.white)),
+        label: const Text(
+          'Add bank / wallet',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }
@@ -89,13 +92,13 @@ class AccountsScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppTheme.darkCard : null,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('New account'),
+        title: const Text('New bank / wallet'),
         content: TextField(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
-            hintText: 'e.g. HDFC Savings',
+            hintText: 'e.g. SBI Bank, UPI Wallet',
             border: OutlineInputBorder(),
           ),
         ),
@@ -119,7 +122,7 @@ class AccountsScreen extends StatelessWidget {
               }
               Navigator.pop(ctx);
               if (context.mounted) {
-                MessageHelper.showSuccess(context, 'Account added');
+                MessageHelper.showSuccess(context, 'Bank / wallet added');
               }
             },
             child: const Text('Save'),
@@ -140,7 +143,7 @@ class AccountsScreen extends StatelessWidget {
       builder: (ctx) => AlertDialog(
         backgroundColor: isDark ? AppTheme.darkCard : null,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Remove account?'),
+        title: const Text('Remove bank / wallet?'),
         content: Text('Remove “$name” from the list?'),
         actions: [
           TextButton(
@@ -156,7 +159,7 @@ class AccountsScreen extends StatelessWidget {
                 if (err != null) {
                   MessageHelper.showError(context, err);
                 } else {
-                  MessageHelper.showSuccess(context, 'Account removed');
+                  MessageHelper.showSuccess(context, 'Bank / wallet removed');
                 }
               }
             },

@@ -24,6 +24,8 @@ class TransactionProvider extends ChangeNotifier {
   }
 
   List<Map<String, dynamic>> get allTransactions => _transactions;
+  List<Map<String, dynamic>> get paymentTransactions =>
+      _transactions.where((t) => (t['entryType'] ?? '') == 'payment').toList();
   List<Map<String, dynamic>> get budgets => _budgets;
   List<String> get accounts => List.unmodifiable(_accounts);
   String get filterType => _filterType;
@@ -91,14 +93,28 @@ class TransactionProvider extends ChangeNotifier {
         final title = (t['title'] ?? '').toString().toLowerCase();
         final category = (t['category'] ?? '').toString().toLowerCase();
         final account = (t['account'] ?? '').toString().toLowerCase();
+        final paymentMode = (t['paymentMode'] ?? '').toString().toLowerCase();
         final note = (t['note'] ?? '').toString().toLowerCase();
+        final party = (t['partyName'] ?? '').toString().toLowerCase();
+        final purpose =
+            (t['paymentPurpose'] ?? '').toString().toLowerCase();
+        final reference = (t['reference'] ?? '').toString().toLowerCase();
+        final entryType = (t['entryType'] ?? '').toString().toLowerCase();
+        final paymentDirection =
+            (t['paymentDirection'] ?? '').toString().toLowerCase();
+        final paymentStatus =
+            (t['paymentStatus'] ?? '').toString().toLowerCase();
         final amount = (t['amount'] ?? 0.0).toDouble();
         final amountStr = amount.toStringAsFixed(0);
         final amountStr2 = amount.toStringAsFixed(2);
         final date = DateTime.tryParse(t['date'] ?? '');
 
         if (title.contains(q) || category.contains(q) ||
-            account.contains(q) || note.contains(q)) {
+            account.contains(q) || note.contains(q) || party.contains(q) ||
+            purpose.contains(q) || reference.contains(q) ||
+            paymentMode.contains(q) ||
+            entryType.contains(q) || paymentDirection.contains(q) ||
+            paymentStatus.contains(q)) {
           return true;
         }
 
@@ -395,10 +411,17 @@ class TransactionProvider extends ChangeNotifier {
   void _loadAccounts() {
     final raw = DbService.getSetting('accountNames');
     if (raw is List && raw.isNotEmpty) {
-      _accounts = raw
+      final loaded = raw
           .map((e) => e.toString().trim())
           .where((e) => e.isNotEmpty)
           .toList();
+      const legacyDefaults = {'Cash', 'Bank', 'Credit Card', 'UPI'};
+      if (loaded.toSet().containsAll(legacyDefaults) &&
+          loaded.length == legacyDefaults.length) {
+        _accounts = List<String>.from(AppCategories.accountTypes);
+      } else {
+        _accounts = loaded;
+      }
     } else {
       _accounts = List<String>.from(AppCategories.accountTypes);
     }

@@ -238,7 +238,7 @@ class DashboardScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   _buildQuickAction(
                     context,
                     icon: Icons.arrow_upward_rounded,
@@ -251,6 +251,23 @@ class DashboardScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => const AddTransactionScreen(
                               initialType: 'expense'),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  _buildQuickAction(
+                    context,
+                    icon: Icons.payments_outlined,
+                    label: 'Payment',
+                    color: AppTheme.secondary,
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AddTransactionScreen(
+                              initialType: 'payment'),
                         ),
                       );
                     },
@@ -582,19 +599,37 @@ class DashboardScreen extends StatelessWidget {
         return;
       }
 
+      String escapeCsv(String value) {
+        final needsQuotes = value.contains(',') ||
+            value.contains('"') ||
+            value.contains('\n');
+        final escaped = value.replaceAll('"', '""');
+        return needsQuotes ? '"$escaped"' : escaped;
+      }
+
       final csvRows = <String>[
-        'Date,Type,Category,Title,Amount,Account,Note',
+        'Date,Type,EntryType,Category,Title,Amount,PaymentMode,Account,Party,Purpose,FromDate,ToDate,Status,Reference,Note',
       ];
 
       for (var t in transactions) {
-        final date = t['date'] ?? '';
-        final type = t['type'] ?? '';
-        final category = t['category'] ?? '';
-        final title = (t['title'] ?? '').toString().replaceAll(',', ';');
-        final amount = (t['amount'] ?? 0.0).toString();
-        final account = t['account'] ?? '';
-        final note = (t['note'] ?? '').toString().replaceAll(',', ';');
-        csvRows.add('$date,$type,$category,$title,$amount,$account,$note');
+        final date = escapeCsv((t['date'] ?? '').toString());
+        final type = escapeCsv((t['type'] ?? '').toString());
+        final entryType = escapeCsv((t['entryType'] ?? 'transaction').toString());
+        final category = escapeCsv((t['category'] ?? '').toString());
+        final title = escapeCsv((t['title'] ?? '').toString());
+        final amount = escapeCsv((t['amount'] ?? 0.0).toString());
+        final paymentMode = escapeCsv((t['paymentMode'] ?? '').toString());
+        final account = escapeCsv((t['account'] ?? '').toString());
+        final party = escapeCsv((t['partyName'] ?? '').toString());
+        final purpose = escapeCsv((t['paymentPurpose'] ?? '').toString());
+        final fromDate =
+            escapeCsv((t['serviceFromDate'] ?? '').toString());
+        final toDate = escapeCsv((t['serviceToDate'] ?? '').toString());
+        final status = escapeCsv((t['paymentStatus'] ?? '').toString());
+        final reference = escapeCsv((t['reference'] ?? '').toString());
+        final note = escapeCsv((t['note'] ?? '').toString());
+        csvRows.add(
+            '$date,$type,$entryType,$category,$title,$amount,$paymentMode,$account,$party,$purpose,$fromDate,$toDate,$status,$reference,$note');
       }
 
       final csvString = csvRows.join('\n');
@@ -657,6 +692,9 @@ ${provider.balance >= 0 ? '✅ Great! You saved ${provider.currency}${provider.b
     HapticFeedback.mediumImpact();
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isExpense = txn['type'] == 'expense';
+    final isPayment = (txn['entryType'] ?? '') == 'payment';
+    final paymentDirection =
+        (txn['paymentDirection'] ?? '').toString();
 
     showModalBottomSheet(
       context: context,
@@ -687,18 +725,25 @@ ${provider.balance >= 0 ? '✅ Great! You saved ${provider.currency}${provider.b
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: (isExpense
-                                  ? AppTheme.expense
-                                  : AppTheme.income)
+                          color: (isPayment
+                                  ? AppTheme.secondary
+                                  : (isExpense
+                                      ? AppTheme.expense
+                                      : AppTheme.income))
                               .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
-                          isExpense
-                              ? Icons.arrow_upward_rounded
-                              : Icons.arrow_downward_rounded,
-                          color:
-                              isExpense ? AppTheme.expense : AppTheme.income,
+                          isPayment
+                              ? Icons.payments_outlined
+                              : (isExpense
+                                  ? Icons.arrow_upward_rounded
+                                  : Icons.arrow_downward_rounded),
+                          color: isPayment
+                              ? AppTheme.secondary
+                              : (isExpense
+                                  ? AppTheme.expense
+                                  : AppTheme.income),
                           size: 18,
                         ),
                       ),
@@ -712,7 +757,14 @@ ${provider.balance >= 0 ? '✅ Great! You saved ${provider.currency}${provider.b
                                     fontWeight: FontWeight.w600,
                                     fontSize: 15)),
                             Text(
-                              '${provider.currency}${(txn['amount'] ?? 0.0).toStringAsFixed(0)} • ${txn['category'] ?? ''}',
+                              [
+                                '${provider.currency}${(txn['amount'] ?? 0.0).toStringAsFixed(0)}',
+                                txn['category'] ?? '',
+                                if (isPayment)
+                                  paymentDirection == 'received'
+                                      ? 'Payment received'
+                                      : 'Payment given',
+                              ].where((e) => e.toString().isNotEmpty).join(' • '),
                               style: TextStyle(
                                   fontSize: 12,
                                   color:
@@ -779,11 +831,14 @@ ${provider.balance >= 0 ? '✅ Great! You saved ${provider.currency}${provider.b
   void _confirmDelete(BuildContext context,
       TransactionProvider provider, Map<String, dynamic> txn) {
     HapticFeedback.mediumImpact();
+    final isPayment = (txn['entryType'] ?? '') == 'payment';
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete Transaction'),
-        content: Text('Delete "${txn['title']}"? This cannot be undone.'),
+        title: Text(isPayment ? 'Delete Payment' : 'Delete Transaction'),
+        content: Text(
+          'Delete "${txn['title']}"? This cannot be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

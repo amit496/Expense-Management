@@ -218,9 +218,9 @@ class SettingsScreen extends StatelessWidget {
                 Icons.account_balance_wallet_outlined,
                 color: AppTheme.secondary,
               ),
-              title: const Text('Accounts & wallets'),
+              title: const Text('Bank / Wallet Accounts'),
               subtitle: Text(
-                'Add bank, UPI, or custom wallets for transactions',
+                'Add bank accounts or wallets used for transactions',
                 style: TextStyle(
                   fontSize: 12,
                   color: isDark ? Colors.white38 : Colors.grey,

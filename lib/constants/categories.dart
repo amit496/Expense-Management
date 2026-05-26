@@ -38,7 +38,12 @@ class AppCategories {
     CategoryData(name: 'Other', icon: Icons.more_horiz, color: Color(0xFF636E72)),
   ];
 
-  static const List<String> accountTypes = ['Cash', 'Bank', 'Credit Card', 'UPI'];
+  static const List<String> accountTypes = [
+    'Cash Wallet',
+    'UPI Wallet',
+    'SBI Bank',
+    'HDFC Bank',
+  ];
 
   static CategoryData? getCategory(String name, String type) {
     final list = type == 'income' ? income : expense;

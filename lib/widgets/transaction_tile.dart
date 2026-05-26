@@ -24,12 +24,23 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final type = transaction['type'] ?? 'expense';
+    final entryType = (transaction['entryType'] ?? 'transaction').toString();
+    final isPayment = entryType == 'payment';
+    final paymentDirection =
+        (transaction['paymentDirection'] ?? '').toString();
     final cat = context.watch<TransactionProvider>().categoryForDisplay(
         transaction['category'] ?? 'Other', type);
     final date = DateTime.tryParse(transaction['date'] ?? '');
     final isExpense = type == 'expense';
     final amount = (transaction['amount'] ?? 0.0).toDouble();
     final account = transaction['account'] ?? '';
+    final paymentMode = (transaction['paymentMode'] ?? '').toString();
+    final partyName = (transaction['partyName'] ?? '').toString();
+    final purpose = (transaction['paymentPurpose'] ?? '').toString();
+    final serviceFrom =
+        DateTime.tryParse(transaction['serviceFromDate'] ?? '');
+    final serviceTo = DateTime.tryParse(transaction['serviceToDate'] ?? '');
+    final reference = (transaction['reference'] ?? '').toString();
 
     return GestureDetector(
       onTap: onTap,
@@ -70,36 +81,90 @@ class TransactionTile extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 3),
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
+                      Text(
+                        [
+                          transaction['category'] ?? '',
+                          if (date != null) DateFormat('MMM dd').format(date),
+                          if (paymentMode.isNotEmpty) paymentMode,
+                          if (account.isNotEmpty) account,
+                        ].join('  •  '),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white38 : Colors.grey,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (isPayment) ...[
+                        const SizedBox(height: 4),
+                        Text(
                           [
-                            transaction['category'] ?? '',
-                            if (date != null) DateFormat('MMM dd').format(date),
-                            if (account.isNotEmpty) account,
+                            paymentDirection == 'received'
+                                ? 'Payment Received'
+                                : 'Payment Given',
+                            if (paymentMode.isNotEmpty) paymentMode,
+                            if (partyName.isNotEmpty) partyName,
+                            if (purpose.isNotEmpty) purpose,
+                            if (serviceFrom != null && serviceTo != null)
+                              '${DateFormat('dd MMM').format(serviceFrom)} - ${DateFormat('dd MMM').format(serviceTo)}',
+                            if (serviceFrom != null && serviceTo == null)
+                              'From ${DateFormat('dd MMM').format(serviceFrom)}',
+                            if (serviceFrom == null && serviceTo != null)
+                              'To ${DateFormat('dd MMM').format(serviceTo)}',
+                            if (reference.isNotEmpty) 'Ref: $reference',
                           ].join('  •  '),
                           style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.white38 : Colors.grey,
+                            fontSize: 11,
+                            color: isDark ? Colors.white54 : Colors.grey.shade600,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              '${isExpense ? '-' : '+'}$currency${amount.toStringAsFixed(0)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: isExpense ? AppTheme.expense : AppTheme.income,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (isPayment)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (paymentDirection == 'received'
+                              ? AppTheme.income
+                              : AppTheme.expense)
+                          .withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      paymentDirection == 'received' ? 'Received' : 'Given',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: paymentDirection == 'received'
+                            ? AppTheme.income
+                            : AppTheme.expense,
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                Text(
+                  '${isExpense ? '-' : '+'}$currency${amount.toStringAsFixed(0)}',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    color: isExpense ? AppTheme.expense : AppTheme.income,
+                  ),
+                ),
+              ],
             ),
             if (onDelete != null) ...[
               const SizedBox(width: 6),
