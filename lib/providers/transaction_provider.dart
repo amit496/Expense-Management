@@ -78,8 +78,7 @@ class TransactionProvider extends ChangeNotifier {
     if (_filterType != 'All') {
       list = list
           .where((t) =>
-              t['type']?.toString().toLowerCase() ==
-              _filterType.toLowerCase())
+              t['type']?.toString().toLowerCase() == _filterType.toLowerCase())
           .toList();
     }
 
@@ -96,8 +95,7 @@ class TransactionProvider extends ChangeNotifier {
         final paymentMode = (t['paymentMode'] ?? '').toString().toLowerCase();
         final note = (t['note'] ?? '').toString().toLowerCase();
         final party = (t['partyName'] ?? '').toString().toLowerCase();
-        final purpose =
-            (t['paymentPurpose'] ?? '').toString().toLowerCase();
+        final purpose = (t['paymentPurpose'] ?? '').toString().toLowerCase();
         final reference = (t['reference'] ?? '').toString().toLowerCase();
         final entryType = (t['entryType'] ?? '').toString().toLowerCase();
         final paymentDirection =
@@ -109,16 +107,22 @@ class TransactionProvider extends ChangeNotifier {
         final amountStr2 = amount.toStringAsFixed(2);
         final date = DateTime.tryParse(t['date'] ?? '');
 
-        if (title.contains(q) || category.contains(q) ||
-            account.contains(q) || note.contains(q) || party.contains(q) ||
-            purpose.contains(q) || reference.contains(q) ||
+        if (title.contains(q) ||
+            category.contains(q) ||
+            account.contains(q) ||
+            note.contains(q) ||
+            party.contains(q) ||
+            purpose.contains(q) ||
+            reference.contains(q) ||
             paymentMode.contains(q) ||
-            entryType.contains(q) || paymentDirection.contains(q) ||
+            entryType.contains(q) ||
+            paymentDirection.contains(q) ||
             paymentStatus.contains(q)) {
           return true;
         }
 
-        if (amountStr.startsWith(q) || amountStr == q ||
+        if (amountStr.startsWith(q) ||
+            amountStr == q ||
             amountStr2.startsWith(q)) {
           return true;
         }
@@ -126,12 +130,9 @@ class TransactionProvider extends ChangeNotifier {
         if (date != null) {
           final day = date.day.toString();
           final dayPadded = date.day.toString().padLeft(2, '0');
-          final monthName =
-              DateFormat('MMMM').format(date).toLowerCase();
-          final monthShort =
-              DateFormat('MMM').format(date).toLowerCase();
-          final dayName =
-              DateFormat('EEEE').format(date).toLowerCase();
+          final monthName = DateFormat('MMMM').format(date).toLowerCase();
+          final monthShort = DateFormat('MMM').format(date).toLowerCase();
+          final dayName = DateFormat('EEEE').format(date).toLowerCase();
 
           if (day == q || dayPadded == q) return true;
           if (monthName.startsWith(q) || monthShort.startsWith(q)) {
@@ -143,8 +144,7 @@ class TransactionProvider extends ChangeNotifier {
           if (formatted.contains(q)) return true;
 
           if (q.length >= 3) {
-            final full =
-                DateFormat('MMM dd, yyyy').format(date).toLowerCase();
+            final full = DateFormat('MMM dd, yyyy').format(date).toLowerCase();
             if (full.contains(q)) return true;
           }
         }
@@ -162,9 +162,15 @@ class TransactionProvider extends ChangeNotifier {
     return list;
   }
 
-  double get totalIncome => _getMonthlyTotal('income');
-  double get totalExpense => _getMonthlyTotal('expense');
+  double get totalIncome => _transactions
+      .where((t) => t['type'] == 'income')
+      .fold(0.0, (sum, t) => sum + (t['amount'] ?? 0.0));
+  double get totalExpense => _transactions
+      .where((t) => t['type'] == 'expense')
+      .fold(0.0, (sum, t) => sum + (t['amount'] ?? 0.0));
   double get balance => totalIncome - totalExpense;
+  double get thisMonthIncome => _getMonthlyTotal('income');
+  double get thisMonthExpense => _getMonthlyTotal('expense');
   double get lastMonthIncome => _getMonthlyTotal('income', monthsAgo: 1);
   double get lastMonthExpense => _getMonthlyTotal('expense', monthsAgo: 1);
 
@@ -279,8 +285,7 @@ class TransactionProvider extends ChangeNotifier {
     final now = DateTime.now();
     final monthStr = DateFormat('yyyy-MM').format(now);
     final budget = _budgets
-        .where(
-            (b) => b['category'] == category && b['month'] == monthStr)
+        .where((b) => b['category'] == category && b['month'] == monthStr)
         .toList();
     return budget.isNotEmpty ? (budget.first['limit'] ?? 0.0) : 0.0;
   }
@@ -316,7 +321,9 @@ class TransactionProvider extends ChangeNotifier {
     _loadCustomCategories();
     _isDarkMode = DbService.getSetting('isDarkMode', defaultValue: true);
     _currency = DbService.getSetting('currency', defaultValue: '₹');
-    _savingsGoal = (DbService.getSetting('savingsGoal', defaultValue: 0.0) as num).toDouble();
+    _savingsGoal =
+        (DbService.getSetting('savingsGoal', defaultValue: 0.0) as num)
+            .toDouble();
     notifyListeners();
   }
 
@@ -462,8 +469,8 @@ class TransactionProvider extends ChangeNotifier {
       extras.add(CategoryData(
         name: n,
         icon: Icons.label_outline_rounded,
-        color: _customCategoryColors[
-            extras.length % _customCategoryColors.length],
+        color:
+            _customCategoryColors[extras.length % _customCategoryColors.length],
       ));
     }
     return [...builtIn, ...extras];

@@ -9,9 +9,14 @@ import '../widgets/transaction_tile.dart';
 import 'add_transaction_screen.dart';
 import 'payments_screen.dart';
 
-class TransactionsScreen extends StatelessWidget {
+class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
 
+  @override
+  State<TransactionsScreen> createState() => _TransactionsScreenState();
+}
+
+class _TransactionsScreenState extends State<TransactionsScreen> {
   Map<String, List<Map<String, dynamic>>> _groupByDate(
       List<Map<String, dynamic>> transactions) {
     Map<String, List<Map<String, dynamic>>> grouped = {};
@@ -53,27 +58,20 @@ class TransactionsScreen extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Row(
-              children: [
-                const Text(
-                  'Transactions',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                _buildDateChip(context, provider),
-              ],
+            child: const Text(
+              'Transactions',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
           ),
-
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: TextField(
               onChanged: provider.setSearchQuery,
               decoration: InputDecoration(
-                hintText: 'Search by name, amount, date...',
+                hintText: 'Search title, category, account, note, amount...',
                 prefixIcon: const Icon(Icons.search, size: 20),
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 suffixIcon: provider.searchQuery.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear, size: 18),
@@ -83,7 +81,10 @@ class TransactionsScreen extends StatelessWidget {
               ),
             ),
           ),
-
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: _buildDateRangeFilter(context, provider),
+          ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
             child: Align(
@@ -127,9 +128,7 @@ class TransactionsScreen extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 12),
-
           SizedBox(
             height: 38,
             child: ListView(
@@ -153,15 +152,12 @@ class TransactionsScreen extends StatelessWidget {
                           : isDark
                               ? Colors.white70
                               : Colors.grey.shade700,
-                      fontWeight: isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                       fontSize: 13,
                     ),
                     side: BorderSide(
-                      color: isSelected
-                          ? AppTheme.primary
-                          : Colors.transparent,
+                      color: isSelected ? AppTheme.primary : Colors.transparent,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -171,9 +167,7 @@ class TransactionsScreen extends StatelessWidget {
               }).toList(),
             ),
           ),
-
           const SizedBox(height: 8),
-
           Expanded(
             child: transactions.isEmpty
                 ? Center(
@@ -183,9 +177,7 @@ class TransactionsScreen extends StatelessWidget {
                         Icon(
                           Icons.receipt_long_outlined,
                           size: 64,
-                          color: isDark
-                              ? Colors.white12
-                              : Colors.grey.shade300,
+                          color: isDark ? Colors.white12 : Colors.grey.shade300,
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -257,8 +249,8 @@ class TransactionsScreen extends StatelessWidget {
                   foregroundColor: Colors.white,
                   icon: Icons.edit_rounded,
                   label: 'Edit',
-                  borderRadius: const BorderRadius.horizontal(
-                      left: Radius.circular(12)),
+                  borderRadius:
+                      const BorderRadius.horizontal(left: Radius.circular(12)),
                 ),
                 SlidableAction(
                   onPressed: (_) {
@@ -271,8 +263,8 @@ class TransactionsScreen extends StatelessWidget {
                   foregroundColor: Colors.white,
                   icon: Icons.delete_rounded,
                   label: 'Delete',
-                  borderRadius: const BorderRadius.horizontal(
-                      right: Radius.circular(12)),
+                  borderRadius:
+                      const BorderRadius.horizontal(right: Radius.circular(12)),
                 ),
               ],
             ),
@@ -328,59 +320,265 @@ class TransactionsScreen extends StatelessWidget {
               MessageHelper.showSuccess(
                   context, 'Transaction deleted successfully');
             },
-            child: const Text('Delete',
-                style: TextStyle(color: AppTheme.expense)),
+            child:
+                const Text('Delete', style: TextStyle(color: AppTheme.expense)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDateChip(
-      BuildContext context, TransactionProvider provider) {
-    return PopupMenuButton<String>(
-      onSelected: provider.setDateRange,
-      itemBuilder: (_) => [
-        const PopupMenuItem(value: 'week', child: Text('This Week')),
-        const PopupMenuItem(value: 'month', child: Text('This Month')),
-        const PopupMenuItem(value: 'year', child: Text('This Year')),
-        const PopupMenuItem(value: 'all', child: Text('All Time')),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppTheme.primary.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+  Future<void> _setQuickDateRange(
+    BuildContext context,
+    TransactionProvider provider,
+    String option,
+  ) async {
+    final now = DateTime.now();
+    DateTime startDate;
+    DateTime endDate = DateTime(now.year, now.month, now.day);
+
+    switch (option) {
+      case 'thisMonth':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'lastMonth':
+        final lastMonth = now.month == 1 ? 12 : now.month - 1;
+        final lastYear = now.month == 1 ? now.year - 1 : now.year;
+        startDate = DateTime(lastYear, lastMonth, 1);
+        endDate =
+            DateTime(lastYear, lastMonth, _daysInMonth(lastYear, lastMonth));
+        break;
+      case 'last3Months':
+        startDate = _subtractMonths(now, 3);
+        break;
+      case 'last6Months':
+        startDate = _subtractMonths(now, 6);
+        break;
+      case 'thisYear':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      default:
+        provider.setDateRange('all');
+        return;
+    }
+
+    provider.setCustomDateRange(startDate, endDate);
+  }
+
+  bool _isSelectedQuickRange(TransactionProvider provider, String option) {
+    if (provider.dateRange != 'custom' || provider.customStartDate == null) {
+      return option == 'thisMonth' && provider.dateRange == 'month';
+    }
+
+    final now = DateTime.now();
+    final start = provider.customStartDate!;
+    final end = provider.customEndDate!;
+
+    switch (option) {
+      case 'lastMonth':
+        final lastMonth = now.month == 1 ? 12 : now.month - 1;
+        final lastYear = now.month == 1 ? now.year - 1 : now.year;
+        return start == DateTime(lastYear, lastMonth, 1) &&
+            end ==
+                DateTime(
+                    lastYear, lastMonth, _daysInMonth(lastYear, lastMonth));
+      case 'last3Months':
+        return start == _subtractMonths(now, 3) &&
+            end == DateTime(now.year, now.month, now.day);
+      case 'last6Months':
+        return start == _subtractMonths(now, 6) &&
+            end == DateTime(now.year, now.month, now.day);
+      default:
+        return false;
+    }
+  }
+
+  DateTime _subtractMonths(DateTime date, int months) {
+    final yearOffset = ((date.month - months - 1) / 12).floor();
+    final targetYear = date.year + yearOffset;
+    final targetMonth = date.month - months - yearOffset * 12;
+    final targetDay = date.day;
+    final maxDay = _daysInMonth(targetYear, targetMonth);
+    return DateTime(targetYear, targetMonth, targetDay.clamp(1, maxDay));
+  }
+
+  int _daysInMonth(int year, int month) {
+    if (month == 2) {
+      return (year % 4 == 0) ? 29 : 28;
+    }
+    return [1, 3, 5, 7, 8, 10, 12].contains(month) ? 31 : 30;
+  }
+
+  Widget _buildDateRangeFilter(
+    BuildContext context,
+    TransactionProvider provider,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Text(
-              _getDateRangeLabel(provider.dateRange),
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppTheme.primary,
-                fontWeight: FontWeight.w600,
+            _buildFilterButton(
+              'This Month',
+              provider.dateRange == 'month',
+              () => provider.setDateRange('month'),
+              isDark,
+            ),
+            _buildFilterButton(
+              'Last Month',
+              _isSelectedQuickRange(provider, 'lastMonth'),
+              () => _setQuickDateRange(context, provider, 'lastMonth'),
+              isDark,
+            ),
+            _buildFilterButton(
+              'Last 3m',
+              _isSelectedQuickRange(provider, 'last3Months'),
+              () => _setQuickDateRange(context, provider, 'last3Months'),
+              isDark,
+            ),
+            _buildFilterButton(
+              'Last 6m',
+              _isSelectedQuickRange(provider, 'last6Months'),
+              () => _setQuickDateRange(context, provider, 'last6Months'),
+              isDark,
+            ),
+            _buildFilterButton(
+              'This Year',
+              provider.dateRange == 'year',
+              () => provider.setDateRange('year'),
+              isDark,
+            ),
+            _buildFilterButton(
+              'All Time',
+              provider.dateRange == 'all',
+              () => provider.setDateRange('all'),
+              isDark,
+            ),
+            GestureDetector(
+              onTap: () => _openCustomDatePicker(context, provider),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: provider.dateRange == 'custom'
+                      ? AppTheme.primary.withValues(alpha: 0.2)
+                      : isDark
+                          ? Colors.white10
+                          : Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: provider.dateRange == 'custom'
+                        ? AppTheme.primary
+                        : Colors.transparent,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.calendar_today,
+                      size: 14,
+                      color: provider.dateRange == 'custom'
+                          ? AppTheme.primary
+                          : isDark
+                              ? Colors.white70
+                              : Colors.grey.shade700,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Pick Date',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: provider.dateRange == 'custom'
+                            ? AppTheme.primary
+                            : isDark
+                                ? Colors.white70
+                                : Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.expand_more, size: 16, color: AppTheme.primary),
           ],
+        ),
+        if (provider.dateRange == 'custom' &&
+            provider.customStartDate != null &&
+            provider.customEndDate != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              'Range: ${DateFormat('MMM d').format(provider.customStartDate!)} - ${DateFormat('MMM d, yyyy').format(provider.customEndDate!)}',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white60 : Colors.grey.shade600,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFilterButton(
+    String label,
+    bool isSelected,
+    VoidCallback onPressed,
+    bool isDark,
+  ) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.primary.withValues(alpha: 0.2)
+              : isDark
+                  ? Colors.white10
+                  : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? AppTheme.primary : Colors.transparent,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected
+                ? AppTheme.primary
+                : isDark
+                    ? Colors.white70
+                    : Colors.grey.shade700,
+          ),
         ),
       ),
     );
   }
 
-  String _getDateRangeLabel(String range) {
-    switch (range) {
-      case 'week':
-        return 'This Week';
-      case 'month':
-        return 'This Month';
-      case 'year':
-        return 'This Year';
-      default:
-        return 'All Time';
+  Future<void> _openCustomDatePicker(
+    BuildContext context,
+    TransactionProvider provider,
+  ) async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange:
+          provider.customStartDate != null && provider.customEndDate != null
+              ? DateTimeRange(
+                  start: provider.customStartDate!,
+                  end: provider.customEndDate!,
+                )
+              : null,
+    );
+
+    if (picked != null) {
+      provider.setCustomDateRange(picked.start, picked.end);
     }
   }
 }

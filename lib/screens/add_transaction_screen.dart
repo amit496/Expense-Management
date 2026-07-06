@@ -36,6 +36,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   final _purposeController = TextEditingController();
   final _referenceController = TextEditingController();
   final _noteController = TextEditingController();
+  final _accountController = TextEditingController();
   String _selectedCategory = '';
   DateTime _selectedDate = DateTime.now();
   DateTime? _serviceFromDate;
@@ -95,8 +96,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       _referenceController.text = t['reference'] ?? '';
       _noteController.text = t['note'] ?? '';
       _selectedCategory = t['category'] ?? '';
-      _selectedDate =
-          DateTime.tryParse(t['date'] ?? '') ?? DateTime.now();
+      _selectedDate = DateTime.tryParse(t['date'] ?? '') ?? DateTime.now();
       _serviceFromDate = DateTime.tryParse(t['serviceFromDate'] ?? '');
       _serviceToDate = DateTime.tryParse(t['serviceToDate'] ?? '');
       _paymentStatus = t['paymentStatus'] ?? 'paid';
@@ -178,6 +178,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
     _purposeController.dispose();
     _referenceController.dispose();
     _noteController.dispose();
+    _accountController.dispose();
     _shakeController.dispose();
     super.dispose();
   }
@@ -236,14 +237,34 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       HapticFeedback.heavyImpact();
       _shakeController.forward(from: 0);
       if (errors.length > 1) {
-        MessageHelper.showError(
-            context, 'Please fill in all required fields');
+        MessageHelper.showError(context, 'Please fill in all required fields');
       } else {
         MessageHelper.showError(context, errors.first);
       }
     }
 
     return isValid;
+  }
+
+  Future<void> _addCustomAccount() async {
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    final name = _accountController.text.trim();
+    if (name.isEmpty) {
+      MessageHelper.showError(context, 'Enter an account or bank name');
+      return;
+    }
+
+    final error = await provider.addAccount(name);
+    if (!mounted) return;
+
+    if (error != null) {
+      MessageHelper.showError(context, error);
+      return;
+    }
+
+    setState(() => _selectedAccount = name);
+    _accountController.clear();
+    MessageHelper.showSuccess(context, 'Account added');
   }
 
   void _save() {
@@ -287,8 +308,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
       data['entryType'] = 'transaction';
     }
 
-    final provider =
-        Provider.of<TransactionProvider>(context, listen: false);
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
 
     if (_isEditing && widget.hiveIndex != null) {
       data['id'] = widget.transaction!['id'];
@@ -350,15 +370,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text('Cancel',
-                style: TextStyle(
-                    color: isDark ? Colors.white54 : Colors.grey)),
+                style: TextStyle(color: isDark ? Colors.white54 : Colors.grey)),
           ),
           ElevatedButton.icon(
             onPressed: () {
               Navigator.pop(ctx);
-              final provider = Provider.of<TransactionProvider>(
-                  context,
-                  listen: false);
+              final provider =
+                  Provider.of<TransactionProvider>(context, listen: false);
               if (widget.hiveIndex != null && widget.hiveIndex! >= 0) {
                 provider.deleteTransaction(widget.hiveIndex!);
                 MessageHelper.showSuccess(
@@ -376,8 +394,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
         ],
@@ -439,18 +456,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _buildTypeTab('expense', 'Expense', AppTheme.expense),
+                    child:
+                        _buildTypeTab('expense', 'Expense', AppTheme.expense),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _buildTypeTab('payment', 'Payment', AppTheme.secondary),
+                    child:
+                        _buildTypeTab('payment', 'Payment', AppTheme.secondary),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
-
             _buildLabel('Amount', isRequired: true),
             const SizedBox(height: 8),
             _buildShakeWrapper(
@@ -460,8 +477,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 children: [
                   TextField(
                     controller: _amountController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true),
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
                     style: const TextStyle(
                         fontSize: 28, fontWeight: FontWeight.bold),
                     decoration: InputDecoration(
@@ -475,9 +492,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                       hintText: '0',
                       hintStyle: TextStyle(
                         fontSize: 28,
-                        color: isDark
-                            ? Colors.white12
-                            : Colors.grey.shade300,
+                        color: isDark ? Colors.white12 : Colors.grey.shade300,
                       ),
                       filled: true,
                       fillColor: _amountError != null
@@ -509,10 +524,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
-            _buildLabel(_isPaymentEntry ? 'Payment Title' : 'Title', isRequired: true),
+            _buildLabel(_isPaymentEntry ? 'Payment Title' : 'Title',
+                isRequired: true),
             const SizedBox(height: 8),
             _buildShakeWrapper(
               hasError: _titleError != null,
@@ -556,9 +570,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ],
               ),
             ),
-
             const SizedBox(height: 20),
-
             if (_isPaymentEntry) ...[
               _buildLabel('Paid To / Received From', isRequired: true),
               const SizedBox(height: 8),
@@ -603,7 +615,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ),
               ),
               const SizedBox(height: 20),
-
               _buildLabel('Why was this payment made?', isRequired: true),
               const SizedBox(height: 8),
               _buildShakeWrapper(
@@ -647,12 +658,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ),
               ),
               const SizedBox(height: 20),
-
               _buildLabel('Payment Direction'),
               const SizedBox(height: 10),
               Container(
                 decoration: BoxDecoration(
-                  color: isDark ? AppTheme.darkCardLight : AppTheme.lightCardLight,
+                  color:
+                      isDark ? AppTheme.darkCardLight : AppTheme.lightCardLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -662,9 +673,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   ],
                 ),
               ),
-
               const SizedBox(height: 20),
-
               _buildLabel('Payment Mode'),
               const SizedBox(height: 10),
               Wrap(
@@ -694,7 +703,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                       fontSize: 13,
                     ),
                     side: BorderSide(
-                      color: isSelected ? AppTheme.secondary : Colors.transparent,
+                      color:
+                          isSelected ? AppTheme.secondary : Colors.transparent,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -702,9 +712,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   );
                 }).toList(),
               ),
-
               const SizedBox(height: 20),
-
               _buildLabel('Service Period'),
               const SizedBox(height: 10),
               Row(
@@ -728,9 +736,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
-
               _buildLabel('Status'),
               const SizedBox(height: 10),
               Wrap(
@@ -752,11 +758,13 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                           : isDark
                               ? Colors.white70
                               : Colors.grey.shade700,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.normal,
                       fontSize: 13,
                     ),
                     side: BorderSide(
-                      color: isSelected ? AppTheme.secondary : Colors.transparent,
+                      color:
+                          isSelected ? AppTheme.secondary : Colors.transparent,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -764,9 +772,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                   );
                 }).toList(),
               ),
-
               const SizedBox(height: 20),
-
               _buildLabel('Reference / Receipt No.'),
               const SizedBox(height: 8),
               TextField(
@@ -788,10 +794,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                       : null,
                 ),
               ),
-
               const SizedBox(height: 20),
             ],
-
             _buildLabel('Category'),
             const SizedBox(height: 10),
             Consumer<TransactionProvider>(
@@ -799,26 +803,22 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 return CategoryPicker(
                   categories: p.categoriesForType(_type),
                   selectedCategory: _selectedCategory,
-                  onSelect: (cat) =>
-                      setState(() => _selectedCategory = cat),
+                  onSelect: (cat) => setState(() => _selectedCategory = cat),
                 );
               },
             ),
-
             const SizedBox(height: 20),
-
             _buildLabel('Date'),
             const SizedBox(height: 8),
             GestureDetector(
               onTap: _pickDate,
               child: Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? AppTheme.darkCardLight
-                      : AppTheme.lightCardLight,
+                  color:
+                      isDark ? AppTheme.darkCardLight : AppTheme.lightCardLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -830,8 +830,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      DateFormat('EEEE, MMM dd, yyyy')
-                          .format(_selectedDate),
+                      DateFormat('EEEE, MMM dd, yyyy').format(_selectedDate),
                       style: TextStyle(
                         fontSize: 15,
                         color: isDark ? Colors.white : Colors.black87,
@@ -841,9 +840,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             _buildLabel('Account / Bank'),
             const SizedBox(height: 10),
             Text(
@@ -856,10 +853,18 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
               ),
             ),
             const SizedBox(height: 8),
+            Text(
+              'Selected account: ${_selectedAccount.isEmpty ? 'None' : _selectedAccount}',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white70 : Colors.grey.shade800,
+              ),
+            ),
+            const SizedBox(height: 8),
             Builder(
               builder: (context) {
-                final txnProvider =
-                    Provider.of<TransactionProvider>(context);
+                final txnProvider = Provider.of<TransactionProvider>(context);
                 final accountChoices = [...txnProvider.accounts];
                 if (_selectedAccount.isNotEmpty &&
                     !accountChoices.contains(_selectedAccount)) {
@@ -879,23 +884,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                       backgroundColor: isDark
                           ? AppTheme.darkCardLight
                           : AppTheme.lightCardLight,
-                      selectedColor:
-                          AppTheme.primary.withValues(alpha: 0.2),
+                      selectedColor: AppTheme.primary.withValues(alpha: 0.2),
                       labelStyle: TextStyle(
                         color: isSelected
                             ? AppTheme.primary
                             : isDark
                                 ? Colors.white70
                                 : Colors.grey.shade700,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.normal,
                         fontSize: 13,
                       ),
                       side: BorderSide(
-                        color: isSelected
-                            ? AppTheme.primary
-                            : Colors.transparent,
+                        color:
+                            isSelected ? AppTheme.primary : Colors.transparent,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -905,9 +907,44 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 );
               },
             ),
-
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _accountController,
+                    decoration: InputDecoration(
+                      hintText: 'Add custom account / bank',
+                      filled: true,
+                      fillColor: isDark
+                          ? AppTheme.darkCardLight
+                          : AppTheme.lightCardLight,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _addCustomAccount,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
-
             _buildLabel('Note (optional)'),
             const SizedBox(height: 8),
             TextField(
@@ -918,9 +955,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 hintText: 'Add a note...',
               ),
             ),
-
             const SizedBox(height: 32),
-
             SizedBox(
               width: double.infinity,
               height: 54,
@@ -946,9 +981,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                     ),
                   ),
                   child: Text(
-                    _isEditing
-                        ? 'Update Transaction'
-                        : 'Save Transaction',
+                    _isEditing ? 'Update Transaction' : 'Save Transaction',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -957,7 +990,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
           ],
         ),
@@ -1006,13 +1038,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
         if (!hasError || !_shakeController.isAnimating) {
           return child!;
         }
-        final sineValue =
-            _shakeController.value * 3.14159 * 3;
-        final dx = (sineValue > 0
-                ? (sineValue % 3.14159 < 1.5708 ? 1 : -1)
-                : 0) *
-            6.0 *
-            (1 - _shakeController.value);
+        final sineValue = _shakeController.value * 3.14159 * 3;
+        final dx =
+            (sineValue > 0 ? (sineValue % 3.14159 < 1.5708 ? 1 : -1) : 0) *
+                6.0 *
+                (1 - _shakeController.value);
         return Transform.translate(offset: Offset(dx, 0), child: child);
       },
       child: child,
@@ -1058,8 +1088,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
   }
 
   Widget _buildTypeTab(String type, String label, Color color) {
-    final isSelected =
-        type == 'payment' ? _isPaymentEntry : (!_isPaymentEntry && _type == type);
+    final isSelected = type == 'payment'
+        ? _isPaymentEntry
+        : (!_isPaymentEntry && _type == type);
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -1086,9 +1117,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected
-                ? color.withValues(alpha: 0.15)
-                : Colors.transparent,
+            color:
+                isSelected ? color.withValues(alpha: 0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isSelected ? color : Colors.transparent,
@@ -1104,8 +1134,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen>
                     : Theme.of(context).brightness == Brightness.dark
                         ? Colors.white54
                         : Colors.grey,
-                fontWeight:
-                    isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 fontSize: 15,
               ),
             ),
